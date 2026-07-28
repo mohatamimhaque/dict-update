@@ -1,0 +1,24 @@
+# Ignore everything by default
+*
+
+# Allow directories
+!*/
+
+# Whitelist web-related files
+!index.html
+!style.css
+!.gitignore
+!README.md
+
+# Exclude local environments, system caches, and secrets
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+gcp_keys.json
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.tmp
+~$*
+

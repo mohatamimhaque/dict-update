@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Master - AI Generator Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="dashboard-container">
+        
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-brain-circuit"></i></div>
+                <div class="logo-text">
+                    <h1>Vocabulary Master</h1>
+                    <p>AI Dictionary Generator Dashboard</p>
+                </div>
+            </div>
+            <div class="connection-status">
+                <span class="pulse-indicator"></span>
+                <span class="status-label">Live Sync Active</span>
+            </div>
+        </header>
+
+        <!-- Main Stats Grid -->
+        <section class="stats-grid">
+            <!-- Progress Circle Card -->
+            <div class="stat-card progress-card">
+                <div class="card-inner">
+                    <h3>Overall Progress</h3>
+                    <div class="progress-container">
+                        <div class="progress-ring-wrapper">
+                            <svg class="progress-ring" width="160" height="160">
+                                <circle class="progress-ring__background" stroke="rgba(255, 255, 255, 0.05)" stroke-width="12" fill="transparent" r="70" cx="80" cy="80" />
+                                <circle class="progress-ring__circle" stroke="url(#progressGradient)" stroke-width="12" stroke-dasharray="439.8" stroke-dashoffset="439.8" stroke-linecap="round" fill="transparent" r="70" cx="80" cy="80" />
+                                <defs>
+                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#8a2be2" />
+                                        <stop offset="100%" stop-color="#00ffff" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="progress-text">
+                                <span id="progress-percent">0%</span>
+                            </div>
+                        </div>
+                        <div class="progress-stats">
+                            <p class="count"><span id="progress-completed">0</span> / <span id="progress-total">0</span></p>
+                            <p class="label">Words Processed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Stats Cards -->
+            <div class="detail-stats-wrapper">
+                <div class="stat-card verified-card">
+                    <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="stat-info">
+                        <h3>Spelling Verified</h3>
+                        <p class="value" id="stats-verified">0</p>
+                        <p class="label">gemini_correct == 1</p>
+                    </div>
+                </div>
+                <div class="stat-card unverified-card">
+                    <div class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                    <div class="stat-info">
+                        <h3>Spelling Unverified</h3>
+                        <p class="value" id="stats-unverified">0</p>
+                        <p class="label">gemini_correct == 0</p>
+                    </div>
+                </div>
+                <div class="stat-card failed-card">
+                    <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="stat-info">
+                        <h3>API Errors</h3>
+                        <p class="value" id="stats-failed">0</p>
+                        <p class="label">In current run</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wireless Connection Card -->
+            <div class="stat-card network-card">
+                <div class="card-inner">
+                    <h3>Supabase Cloud Sync</h3>
+                    <p class="desc">Since this dashboard connects directly to Supabase, it is accessible globally once deployed on Vercel:</p>
+                    <div class="network-address" id="network-url">
+                        <i class="fa-solid fa-cloud"></i> <span>https://fjmimidvlcrnklrsshyd.supabase.co</span>
+                    </div>
+                    <div class="qr-placeholder">
+                        <i class="fa-solid fa-globe"></i>
+                        <p>Fully wireless cloud synchronization</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Log Area -->
+        <section class="log-section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-terminal"></i> Live Processing Stream</h2>
+                <div class="log-filters">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="log-search" placeholder="Search words...">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="success">Success</button>
+                        <button class="filter-btn" data-filter="error">Errors</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-table-wrapper">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Word</th>
+                            <th>Status</th>
+                            <th>Spelling</th>
+                            <th>Log Details</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body">
+                        <tr>
+                            <td colspan="5" class="loading-state">
+                                <div class="spinner"></div>
+                                <p>Waiting for data feed...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Dashboard Script -->
+    <script>
+        const progressCircle = document.querySelector('.progress-ring__circle');
+        const radius = parseFloat(progressCircle.getAttribute('r')) || 70;
+        const circumference = radius * 2 * Math.PI;
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100 * circumference);
+            progressCircle.style.strokeDashoffset = offset;
+        }
+
+        let currentFilter = 'all';
+        let statsData = null;
+
+        const SUPABASE_URL = "https://fjmimidvlcrnklrsshyd.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqbWltaWR2bGNybmtscnNzaHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTU4MTYsImV4cCI6MjEwMDgzMTgxNn0.WKEaYVjMp7FUJ_gtmuf-lwlaWQgjUYwSv7IlIx6Ayxg";
+
+        // Poll stats
+        async function fetchStats() {
+            try {
+                const headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": `Bearer ${SUPABASE_KEY}`
+                };
+
+                // Query all statuses for counts in one request to avoid multiple roundtrips
+                const statsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=status,gemini_correct`, { headers });
+                if (!statsRes.ok) throw new Error('Failed to fetch stats');
+                const allItems = await statsRes.json();
+
+                // Compute stats
+                const total = 15246; // Target total from excel
+                let completed = 0;
+                let verified = 0;
+                let unverified = 0;
+                let failed = 0;
+
+                allItems.forEach(item => {
+                    if (item.status === 'success') completed++;
+                    if (item.status === 'error') failed++;
+                    if (item.gemini_correct === 1) verified++;
+                    if (item.gemini_correct === 0) unverified++;
+                });
+
+                const percent = total > 0 ? parseFloat((completed / total * 100).toFixed(2)) : 0;
+
+                // Query recent logs
+                const logsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=*&order=timestamp.desc&limit=50`, { headers });
+                if (!logsRes.ok) throw new Error('Failed to fetch logs');
+                const recent_logs = await logsRes.json();
+
+                statsData = {
+                    total,
+                    completed,
+                    verified,
+                    unverified,
+                    failed,
+                    percent,
+                    recent_logs
+                };
+
+                updateDashboard(statsData);
+            } catch (err) {
+                console.error('Error fetching stats:', err);
+                document.querySelector('.connection-status').classList.add('error');
+                document.querySelector('.status-label').textContent = 'Disconnected';
+                
+                // Show a helpful error message in the table body instead of spinning forever
+                const body = document.getElementById('log-body');
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state" style="color: var(--color-danger); padding: 2rem;">
+                            <i class="fa-solid fa-circle-exclamation" style="font-size: 2.2rem; margin-bottom: 0.75rem; display: block;"></i>
+                            <p><strong>Failed to connect to Supabase Cloud Database.</strong></p>
+                            <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                                If you opened this file directly from your local folders (using a <code>file://</code> URL), browser CORS security policies will block connection. 
+                                <br><br>
+                                To view this locally, run a simple Python web server in this directory:
+                                <br><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python -m http.server 8000</code>
+                                <br>and navigate to <strong>http://localhost:8000</strong>.
+                            </p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update connection status
+            document.querySelector('.connection-status').classList.remove('error');
+            document.querySelector('.status-label').textContent = 'Live Sync Active';
+
+            // Update simple counters
+            document.getElementById('progress-completed').textContent = data.completed.toLocaleString();
+            document.getElementById('progress-total').textContent = data.total.toLocaleString();
+            document.getElementById('stats-verified').textContent = data.verified.toLocaleString();
+            document.getElementById('stats-unverified').textContent = data.unverified.toLocaleString();
+            document.getElementById('stats-failed').textContent = data.failed.toLocaleString();
+
+            // Progress text and ring
+            document.getElementById('progress-percent').textContent = `${data.percent}%`;
+            setProgress(data.percent);
+
+            // Render logs
+            renderLogs(data.recent_logs);
+        }
+
+        function renderLogs(logs) {
+            const body = document.getElementById('log-body');
+            const searchVal = document.getElementById('log-search').value.toLowerCase();
+
+            // Filter logs
+            const filtered = logs.filter(log => {
+                const wordVal = (log.word || '').toLowerCase();
+                const msgVal = (log.message || '').toLowerCase();
+                const matchesSearch = wordVal.includes(searchVal) || msgVal.includes(searchVal);
+                const matchesTab = currentFilter === 'all' || log.status === currentFilter;
+                return matchesSearch && matchesTab;
+            });
+
+            if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" class="empty-state">No matching logs found</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = filtered.map(log => {
+                const isSuccess = log.status === 'success';
+                const statusBadge = isSuccess 
+                    ? `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Success</span>`
+                    : `<span class="badge badge-danger"><i class="fa-solid fa-xmark"></i> Error</span>`;
+                
+                let correctBadge = '<span class="badge badge-gray">Unknown</span>';
+                if (log.gemini_correct === 1) {
+                    correctBadge = '<span class="badge badge-success-light">Verified (1)</span>';
+                } else if (log.gemini_correct === 0) {
+                    correctBadge = '<span class="badge badge-danger-light">Unverified (0)</span>';
+                }
+
+                // Format timestamp
+                let timeStr = 'N/A';
+                if (log.timestamp) {
+                    try {
+                        const date = new Date(log.timestamp);
+                        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    } catch(e){}
+                }
+
+                const escapedReason = escapeHTML(log.gemini_reason || '');
+                const escapedMessage = escapeHTML(log.message || '');
+
+                const detailMsg = escapedReason 
+                    ? `<strong>Reason:</strong> ${escapedReason}<br><small>${escapedMessage}</small>` 
+                    : escapedMessage;
+
+                return `
+                    <tr class="${log.status === 'error' ? 'row-error' : ''}">
+                        <td class="word-col">${escapeHTML(log.word || '')}</td>
+                        <td>${statusBadge}</td>
+                        <td>${correctBadge}</td>
+                        <td class="msg-col">${detailMsg}</td>
+                        <td class="time-col">${timeStr}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // Search inputs
+        document.getElementById('log-search').addEventListener('input', () => {
+            if (statsData) renderLogs(statsData.recent_logs);
+        });
+
+        // Tabs
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.getAttribute('data-filter');
+                if (statsData) renderLogs(statsData.recent_logs);
+            });
+        });
+
+        // Initial fetch
+        fetchStats();
+        // Poll every 3 seconds
+        setInterval(fetchStats, 3000);
+    </script>
+</body>
+</html>
