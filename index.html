@@ -304,8 +304,8 @@
                 if (data.remaining <= 0) {
                     timerRemainingEl.textContent = 'Completed';
                 } else if (avgSpeed > 0) {
-                    // Since 2 concurrent workers are running, effective speed is avgSpeed / 2 seconds per word
-                    const remainingSec = Math.floor((data.remaining * avgSpeed) / 2);
+                    // Since 3 concurrent workers are running, effective speed is avgSpeed / 3 seconds per word
+                    const remainingSec = Math.floor((data.remaining * avgSpeed) / 3);
                     const remHours = Math.floor(remainingSec / 3600);
                     const remMinutes = Math.floor((remainingSec % 3600) / 60);
                     const remSeconds = remainingSec % 60;
