@@ -226,15 +226,36 @@
                     throw new Error('Failed to fetch stats from Supabase');
                 }
 
-                const completed = parseRangeCount(successRes);
                 const failed = parseRangeCount(failedRes);
                 const verified = parseRangeCount(verifiedRes);
                 const unverified = parseRangeCount(unverifiedRes);
                 const recent_logs = await logsRes.json();
 
-                const total = 15246; // Target total from excel
+                // Dynamic stats from latest log if available, otherwise fall back to row counting
+                let total = 15246; // Default target fallback
+                let completed = parseRangeCount(successRes); // Default count fallback
+                let remaining = Math.max(0, total - completed);
+
+                if (recent_logs && recent_logs.length > 0) {
+                    for (const log of recent_logs) {
+                        if (log.message && log.message.includes('| Stats:')) {
+                            try {
+                                const statsPart = log.message.split('| Stats:')[1].trim();
+                                const stats = JSON.parse(statsPart);
+                                if (stats && typeof stats.total === 'number') {
+                                    total = stats.total;
+                                    completed = stats.completed;
+                                    remaining = stats.remaining;
+                                    break;
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse stats from log:', e);
+                            }
+                        }
+                    }
+                }
+
                 const percent = total > 0 ? parseFloat((completed / total * 100).toFixed(2)) : 0;
-                const remaining = Math.max(0, total - completed);
 
                 statsData = {
                     total,
@@ -408,7 +429,10 @@
                 }
 
                 const escapedReason = escapeHTML(log.gemini_reason || '');
-                const escapedMessage = escapeHTML(log.message || '');
+                let escapedMessage = escapeHTML(log.message || '');
+                if (escapedMessage.includes('| Stats:')) {
+                    escapedMessage = escapedMessage.split('| Stats:')[0].trim();
+                }
 
                 const detailMsg = escapedReason 
                     ? `<strong>Reason:</strong> ${escapedReason}<br><small>${escapedMessage}</small>` 
