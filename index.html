@@ -172,6 +172,15 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqbWltaWR2bGNybmtscnNzaHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTU4MTYsImV4cCI6MjEwMDgzMTgxNn0.WKEaYVjMp7FUJ_gtmuf-lwlaWQgjUYwSv7IlIx6Ayxg";
 
         // Poll stats
+        // Helper to parse Content-Range header total count
+        function parseRangeCount(res) {
+            const range = res.headers.get('content-range');
+            if (!range) return 0;
+            const parts = range.split('/');
+            return parts.length > 1 ? parseInt(parts[1], 10) : 0;
+        }
+
+        // Poll stats
         async function fetchStats() {
             try {
                 const headers = {
@@ -179,32 +188,33 @@
                     "Authorization": `Bearer ${SUPABASE_KEY}`
                 };
 
-                // Query all statuses for counts in one request to avoid multiple roundtrips
-                const statsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=status,gemini_correct&limit=20000`, { headers });
-                if (!statsRes.ok) throw new Error('Failed to fetch stats');
-                const allItems = await statsRes.json();
+                const headersWithCount = {
+                    ...headers,
+                    "Prefer": "count=exact"
+                };
 
-                // Compute stats
+                // Query counts in parallel using Content-Range header to bypass 1000 row capping
+                const [successRes, failedRes, verifiedRes, unverifiedRes, logsRes] = await Promise.all([
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?status=eq.success&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?status=eq.error&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?gemini_correct=eq.1&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?gemini_correct=eq.0&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=*&order=timestamp.desc&limit=50`, { headers })
+                ]);
+
+                if (!successRes.ok || !failedRes.ok || !verifiedRes.ok || !unverifiedRes.ok || !logsRes.ok) {
+                    throw new Error('Failed to fetch stats from Supabase');
+                }
+
+                const completed = parseRangeCount(successRes);
+                const failed = parseRangeCount(failedRes);
+                const verified = parseRangeCount(verifiedRes);
+                const unverified = parseRangeCount(unverifiedRes);
+                const recent_logs = await logsRes.json();
+
                 const total = 15246; // Target total from excel
-                let completed = 0;
-                let verified = 0;
-                let unverified = 0;
-                let failed = 0;
-
-                allItems.forEach(item => {
-                    if (item.status === 'success') completed++;
-                    if (item.status === 'error') failed++;
-                    if (item.gemini_correct === 1) verified++;
-                    if (item.gemini_correct === 0) unverified++;
-                });
-
                 const percent = total > 0 ? parseFloat((completed / total * 100).toFixed(2)) : 0;
                 const remaining = Math.max(0, total - completed);
-
-                // Query recent logs
-                const logsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=*&order=timestamp.desc&limit=50`, { headers });
-                if (!logsRes.ok) throw new Error('Failed to fetch logs');
-                const recent_logs = await logsRes.json();
 
                 statsData = {
                     total,
