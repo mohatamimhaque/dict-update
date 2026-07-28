@@ -175,15 +175,60 @@ body {
 /* Stats Grid Layout */
 .stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1.1fr 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2.5rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 650px) {
     .stats-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Session Timer Card */
+.session-timer-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.timer-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+.timer-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.timer-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.timer-label i {
+    color: var(--accent-cyan);
+}
+
+.timer-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    color: var(--text-primary);
 }
 
 /* Progress Circle Card */

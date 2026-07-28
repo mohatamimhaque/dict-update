@@ -97,6 +97,23 @@
                 </div>
             </div>
 
+            <!-- Session Stats Card -->
+            <div class="stat-card session-timer-card">
+                <div class="card-inner">
+                    <h3>Session Timers</h3>
+                    <div class="timer-stats">
+                        <div class="timer-stat">
+                            <span class="timer-label"><i class="fa-solid fa-stopwatch"></i> Elapsed Time</span>
+                            <span class="timer-value" id="timer-elapsed">00:00:00</span>
+                        </div>
+                        <div class="timer-stat">
+                            <span class="timer-label"><i class="fa-solid fa-hourglass-half"></i> Est. Remaining</span>
+                            <span class="timer-value" id="timer-remaining">Estimating...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Wireless Connection Card -->
             <div class="stat-card network-card">
                 <div class="card-inner">
@@ -167,6 +184,57 @@
 
         let currentFilter = 'all';
         let statsData = null;
+
+        // Session stopwatch and timer variables
+        let sessionStartTime = Date.now();
+        let sessionInitialCompleted = null;
+        let lastCompleted = 0;
+        let lastTotal = 0;
+
+        // Tick elapsed time and update estimation every second
+        setInterval(() => {
+            const elapsedMs = Date.now() - sessionStartTime;
+            const elapsedSec = Math.floor(elapsedMs / 1000);
+            
+            // Format elapsed
+            const hours = Math.floor(elapsedSec / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsedSec % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (elapsedSec % 60).toString().padStart(2, '0');
+            
+            const timerElapsedEl = document.getElementById('timer-elapsed');
+            if (timerElapsedEl) {
+                timerElapsedEl.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+
+            if (sessionInitialCompleted !== null && lastCompleted > sessionInitialCompleted) {
+                const processed = lastCompleted - sessionInitialCompleted;
+                const remaining = lastTotal - lastCompleted;
+                const rate = processed / elapsedSec; // words per second
+                const remainingSec = Math.floor(remaining / rate);
+
+                const timerRemainingEl = document.getElementById('timer-remaining');
+                if (timerRemainingEl) {
+                    if (remainingSec <= 0) {
+                        timerRemainingEl.textContent = 'Completed';
+                    } else {
+                        const remHours = Math.floor(remainingSec / 3600);
+                        const remMinutes = Math.floor((remainingSec % 3600) / 60);
+                        const remSeconds = remainingSec % 60;
+                        
+                        let remStr = '';
+                        if (remHours > 0) remStr += `${remHours}h `;
+                        if (remMinutes > 0 || remHours > 0) remStr += `${remMinutes}m `;
+                        remStr += `${remSeconds}s`;
+                        timerRemainingEl.textContent = remStr;
+                    }
+                }
+            } else {
+                const timerRemainingEl = document.getElementById('timer-remaining');
+                if (timerRemainingEl) {
+                    timerRemainingEl.textContent = 'Estimating...';
+                }
+            }
+        }, 1000);
 
         const SUPABASE_URL = "https://fjmimidvlcrnklrsshyd.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqbWltaWR2bGNybmtscnNzaHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTU4MTYsImV4cCI6MjEwMDgzMTgxNn0.WKEaYVjMp7FUJ_gtmuf-lwlaWQgjUYwSv7IlIx6Ayxg";
@@ -257,6 +325,14 @@
             // Update connection status
             document.querySelector('.connection-status').classList.remove('error');
             document.querySelector('.status-label').textContent = 'Live Sync Active';
+
+            // Update session tracking variables
+            if (sessionInitialCompleted === null && data.completed > 0) {
+                sessionInitialCompleted = data.completed;
+                sessionStartTime = Date.now();
+            }
+            lastCompleted = data.completed;
+            lastTotal = data.total;
 
             // Update simple counters
             document.getElementById('progress-completed').textContent = data.completed.toLocaleString();
