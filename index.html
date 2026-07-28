@@ -180,7 +180,7 @@
                 };
 
                 // Query all statuses for counts in one request to avoid multiple roundtrips
-                const statsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=status,gemini_correct`, { headers });
+                const statsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=status,gemini_correct&limit=20000`, { headers });
                 if (!statsRes.ok) throw new Error('Failed to fetch stats');
                 const allItems = await statsRes.json();
 
