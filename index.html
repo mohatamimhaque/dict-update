@@ -155,12 +155,13 @@
                             <th>Status</th>
                             <th>Spelling</th>
                             <th>Log Details</th>
+                            <th>Duration</th>
                             <th>Timestamp</th>
                         </tr>
                     </thead>
                     <tbody id="log-body">
                         <tr>
-                            <td colspan="5" class="loading-state">
+                            <td colspan="6" class="loading-state">
                                 <div class="spinner"></div>
                                 <p>Waiting for data feed...</p>
                             </td>
@@ -185,56 +186,7 @@
         let currentFilter = 'all';
         let statsData = null;
 
-        // Session stopwatch and timer variables
-        let sessionStartTime = Date.now();
-        let sessionInitialCompleted = null;
-        let lastCompleted = 0;
-        let lastTotal = 0;
 
-        // Tick elapsed time and update estimation every second
-        setInterval(() => {
-            const elapsedMs = Date.now() - sessionStartTime;
-            const elapsedSec = Math.floor(elapsedMs / 1000);
-            
-            // Format elapsed
-            const hours = Math.floor(elapsedSec / 3600).toString().padStart(2, '0');
-            const minutes = Math.floor((elapsedSec % 3600) / 60).toString().padStart(2, '0');
-            const seconds = (elapsedSec % 60).toString().padStart(2, '0');
-            
-            const timerElapsedEl = document.getElementById('timer-elapsed');
-            if (timerElapsedEl) {
-                timerElapsedEl.textContent = `${hours}:${minutes}:${seconds}`;
-            }
-
-            if (sessionInitialCompleted !== null && lastCompleted > sessionInitialCompleted) {
-                const processed = lastCompleted - sessionInitialCompleted;
-                const remaining = lastTotal - lastCompleted;
-                const rate = processed / elapsedSec; // words per second
-                const remainingSec = Math.floor(remaining / rate);
-
-                const timerRemainingEl = document.getElementById('timer-remaining');
-                if (timerRemainingEl) {
-                    if (remainingSec <= 0) {
-                        timerRemainingEl.textContent = 'Completed';
-                    } else {
-                        const remHours = Math.floor(remainingSec / 3600);
-                        const remMinutes = Math.floor((remainingSec % 3600) / 60);
-                        const remSeconds = remainingSec % 60;
-                        
-                        let remStr = '';
-                        if (remHours > 0) remStr += `${remHours}h `;
-                        if (remMinutes > 0 || remHours > 0) remStr += `${remMinutes}m `;
-                        remStr += `${remSeconds}s`;
-                        timerRemainingEl.textContent = remStr;
-                    }
-                }
-            } else {
-                const timerRemainingEl = document.getElementById('timer-remaining');
-                if (timerRemainingEl) {
-                    timerRemainingEl.textContent = 'Estimating...';
-                }
-            }
-        }, 1000);
 
         const SUPABASE_URL = "https://fjmimidvlcrnklrsshyd.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqbWltaWR2bGNybmtscnNzaHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTU4MTYsImV4cCI6MjEwMDgzMTgxNn0.WKEaYVjMp7FUJ_gtmuf-lwlaWQgjUYwSv7IlIx6Ayxg";
@@ -326,13 +278,47 @@
             document.querySelector('.connection-status').classList.remove('error');
             document.querySelector('.status-label').textContent = 'Live Sync Active';
 
-            // Update session tracking variables
-            if (sessionInitialCompleted === null && data.completed > 0) {
-                sessionInitialCompleted = data.completed;
-                sessionStartTime = Date.now();
+            // Compute average speed from recent logs
+            let totalDuration = 0;
+            let durationCount = 0;
+            if (data.recent_logs && data.recent_logs.length > 0) {
+                data.recent_logs.forEach(log => {
+                    if (log.message) {
+                        const match = log.message.match(/\[Time:\s*([\d\.]+)s\]/);
+                        if (match) {
+                            totalDuration += parseFloat(match[1]);
+                            durationCount++;
+                        }
+                    }
+                });
             }
-            lastCompleted = data.completed;
-            lastTotal = data.total;
+
+            const avgSpeed = durationCount > 0 ? (totalDuration / durationCount) : 0.0;
+            const avgSpeedEl = document.getElementById('timer-avg-speed');
+            if (avgSpeedEl) {
+                avgSpeedEl.textContent = avgSpeed > 0 ? `${avgSpeed.toFixed(1)}s` : 'N/A';
+            }
+
+            const timerRemainingEl = document.getElementById('timer-remaining');
+            if (timerRemainingEl) {
+                if (data.remaining <= 0) {
+                    timerRemainingEl.textContent = 'Completed';
+                } else if (avgSpeed > 0) {
+                    // Since 2 concurrent workers are running, effective speed is avgSpeed / 2 seconds per word
+                    const remainingSec = Math.floor((data.remaining * avgSpeed) / 2);
+                    const remHours = Math.floor(remainingSec / 3600);
+                    const remMinutes = Math.floor((remainingSec % 3600) / 60);
+                    const remSeconds = remainingSec % 60;
+
+                    let remStr = '';
+                    if (remHours > 0) remStr += `${remHours}h `;
+                    if (remMinutes > 0 || remHours > 0) remStr += `${remMinutes}m `;
+                    remStr += `${remSeconds}s`;
+                    timerRemainingEl.textContent = remStr;
+                } else {
+                    timerRemainingEl.textContent = 'Estimating...';
+                }
+            }
 
             // Update simple counters
             document.getElementById('progress-completed').textContent = data.completed.toLocaleString();
@@ -364,7 +350,7 @@
             });
 
             if (filtered.length === 0) {
-                body.innerHTML = `<tr><td colspan="5" class="empty-state">No matching logs found</td></tr>`;
+                body.innerHTML = `<tr><td colspan="6" class="empty-state">No matching logs found</td></tr>`;
                 return;
             }
 
@@ -379,6 +365,15 @@
                     correctBadge = '<span class="badge badge-success-light">Verified (1)</span>';
                 } else if (log.gemini_correct === 0) {
                     correctBadge = '<span class="badge badge-danger-light">Unverified (0)</span>';
+                }
+
+                // Extract word duration from message
+                let durationBadge = '<span class="badge badge-gray">N/A</span>';
+                if (log.message) {
+                    const match = log.message.match(/\[Time:\s*([\d\.]+)s\]/);
+                    if (match) {
+                        durationBadge = `<span class="badge badge-cyan"><i class="fa-solid fa-gauge-high"></i> ${match[1]}s</span>`;
+                    }
                 }
 
                 // Format timestamp in BD time zone (Asia/Dhaka)
@@ -411,6 +406,7 @@
                         <td>${statusBadge}</td>
                         <td>${correctBadge}</td>
                         <td class="msg-col">${detailMsg}</td>
+                        <td>${durationBadge}</td>
                         <td class="time-col">${timeStr}</td>
                     </tr>
                 `;
