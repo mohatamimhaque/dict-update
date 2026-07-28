@@ -293,6 +293,20 @@
                 });
             }
 
+            // Dynamically determine the number of workers from log entries
+            let numWorkers = 1; // default fallback
+            if (data.recent_logs && data.recent_logs.length > 0) {
+                for (const log of data.recent_logs) {
+                    if (log.message) {
+                        const match = log.message.match(/\[Worker\s*\d+\/(\d+)\]/);
+                        if (match) {
+                            numWorkers = parseInt(match[1], 10);
+                            break;
+                        }
+                    }
+                }
+            }
+
             const avgSpeed = durationCount > 0 ? (totalDuration / durationCount) : 0.0;
             const avgSpeedEl = document.getElementById('timer-avg-speed');
             if (avgSpeedEl) {
@@ -304,8 +318,8 @@
                 if (data.remaining <= 0) {
                     timerRemainingEl.textContent = 'Completed';
                 } else if (avgSpeed > 0) {
-                    // Since 3 concurrent workers are running, effective speed is avgSpeed / 3 seconds per word
-                    const remainingSec = Math.floor((data.remaining * avgSpeed) / 3);
+                    // Since numWorkers concurrent workers are running, effective speed is avgSpeed / numWorkers seconds per word
+                    const remainingSec = Math.floor((data.remaining * avgSpeed) / numWorkers);
                     const remHours = Math.floor(remainingSec / 3600);
                     const remMinutes = Math.floor((remainingSec % 3600) / 60);
                     const remSeconds = remainingSec % 60;
