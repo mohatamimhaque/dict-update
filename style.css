@@ -281,6 +281,11 @@ body {
     color: var(--color-warning);
 }
 
+.remaining-card .stat-icon {
+    background: rgba(138, 43, 226, 0.12);
+    color: var(--accent-purple);
+}
+
 .failed-card .stat-icon {
     background: rgba(239, 68, 68, 0.1);
     color: var(--color-danger);

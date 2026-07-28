@@ -79,6 +79,14 @@
                         <p class="label">gemini_correct == 0</p>
                     </div>
                 </div>
+                <div class="stat-card remaining-card">
+                    <div class="stat-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <div class="stat-info">
+                        <h3>Remaining Words</h3>
+                        <p class="value" id="stats-remaining">0</p>
+                        <p class="label">Pending processing</p>
+                    </div>
+                </div>
                 <div class="stat-card failed-card">
                     <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     <div class="stat-info">
@@ -191,6 +199,7 @@
                 });
 
                 const percent = total > 0 ? parseFloat((completed / total * 100).toFixed(2)) : 0;
+                const remaining = Math.max(0, total - completed);
 
                 // Query recent logs
                 const logsRes = await fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=*&order=timestamp.desc&limit=50`, { headers });
@@ -203,6 +212,7 @@
                     verified,
                     unverified,
                     failed,
+                    remaining,
                     percent,
                     recent_logs
                 };
@@ -243,6 +253,7 @@
             document.getElementById('progress-total').textContent = data.total.toLocaleString();
             document.getElementById('stats-verified').textContent = data.verified.toLocaleString();
             document.getElementById('stats-unverified').textContent = data.unverified.toLocaleString();
+            document.getElementById('stats-remaining').textContent = data.remaining.toLocaleString();
             document.getElementById('stats-failed').textContent = data.failed.toLocaleString();
 
             // Progress text and ring
