@@ -55,121 +55,121 @@
         "id": "PR0008",
         "rule": "I in closed syllable = short i sound",
         "slug": "i-in-closed-syllable-short-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0009",
         "rule": "I before ld, nd, gn = long i sound",
         "slug": "i-before-ld-nd-gn-long-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0010",
         "rule": "O at end of word = long o sound",
         "slug": "o-at-end-of-word-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0011",
         "rule": "O in closed syllable = short o sound",
         "slug": "o-in-closed-syllable-short-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0012",
         "rule": "O before consonant + e = long o sound",
         "slug": "o-before-consonant-e-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0013",
         "rule": "O before ld, st = long o sound",
         "slug": "o-before-ld-st-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0014",
         "rule": "U in closed syllable = short u sound",
         "slug": "u-in-closed-syllable-short-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0015",
         "rule": "U before consonant + e = long u sound",
         "slug": "u-before-consonant-e-long-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0016",
         "rule": "U after r = short u sound",
         "slug": "u-after-r-short-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0017",
         "rule": "Y as vowel in stressed syllable = long i sound",
         "slug": "y-as-vowel-in-stressed-syllable-long-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0018",
         "rule": "Y as vowel in unstressed syllable = short i sound",
         "slug": "y-as-vowel-in-unstressed-syllable-short-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0019",
         "rule": "Double e = long e sound",
         "slug": "double-e-long-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0020",
         "rule": "Double o = long o sound",
         "slug": "double-o-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0021",
         "rule": "Ai digraph = long a sound",
         "slug": "ai-digraph-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0022",
         "rule": "Ay digraph = long a sound",
         "slug": "ay-digraph-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0023",
         "rule": "Ei digraph = long a sound",
         "slug": "ei-digraph-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0024",
         "rule": "Ey digraph = long a sound",
         "slug": "ey-digraph-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0025",
         "rule": "Eau digraph = long o sound",
         "slug": "eau-digraph-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0026",
         "rule": "Ew digraph = long u sound",
         "slug": "ew-digraph-long-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0027",
         "rule": "Oa digraph = long o sound",
         "slug": "oa-digraph-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0028",
@@ -193,91 +193,91 @@
         "id": "PR0031",
         "rule": "Ou digraph = ou sound",
         "slug": "ou-digraph-ou-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0032",
         "rule": "Ow digraph = ou sound",
         "slug": "ow-digraph-ou-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0033",
         "rule": "Ue digraph = long u sound",
         "slug": "ue-digraph-long-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0034",
         "rule": "Ui digraph = u sound",
         "slug": "ui-digraph-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0035",
         "rule": "Ie digraph = long e sound",
         "slug": "ie-digraph-long-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0036",
         "rule": "A before w = a sound",
         "slug": "a-before-w-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0037",
         "rule": "O before w = o sound",
         "slug": "o-before-w-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0038",
         "rule": "U before r + consonant = u sound",
         "slug": "u-before-r-consonant-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0039",
         "rule": "A in stressed syllable = long a sound",
         "slug": "a-in-stressed-syllable-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0040",
         "rule": "E in unstressed syllable = schwa sound",
         "slug": "e-in-unstressed-syllable-schwa-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0041",
         "rule": "I in unstressed syllable = schwa sound",
         "slug": "i-in-unstressed-syllable-schwa-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0042",
         "rule": "O in unstressed syllable = schwa sound",
         "slug": "o-in-unstressed-syllable-schwa-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0043",
         "rule": "U in unstressed syllable = schwa sound",
         "slug": "u-in-unstressed-syllable-schwa-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0044",
         "rule": "A before ng = æ sound",
         "slug": "a-before-ng-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0045",
         "rule": "O before ng = ŋ sound",
         "slug": "o-before-ng-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0046",
@@ -289,7 +289,7 @@
         "id": "PR0047",
         "rule": "R-colored vowel = vowel influenced by r",
         "slug": "r-colored-vowel-vowel-influenced-by-r",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0048",
@@ -301,19 +301,19 @@
         "id": "PR0049",
         "rule": "E before r = er sound",
         "slug": "e-before-r-er-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0050",
         "rule": "I before r = ir sound",
         "slug": "i-before-r-ir-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0051",
         "rule": "O before r = or sound",
         "slug": "o-before-r-or-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0052",
@@ -325,31 +325,31 @@
         "id": "PR0053",
         "rule": "Vowel before gh = vowel affected by g",
         "slug": "vowel-before-gh-vowel-affected-by-g",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0054",
         "rule": "A before double consonant = short a sound",
         "slug": "a-before-double-consonant-short-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0055",
         "rule": "E before double consonant = short e sound",
         "slug": "e-before-double-consonant-short-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0056",
         "rule": "I before double consonant = short i sound",
         "slug": "i-before-double-consonant-short-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0057",
         "rule": "O before double consonant = short o sound",
         "slug": "o-before-double-consonant-short-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0058",
@@ -361,7 +361,7 @@
         "id": "PR0059",
         "rule": "A before mb = short a sound",
         "slug": "a-before-mb-short-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0060",
@@ -385,13 +385,13 @@
         "id": "PR0063",
         "rule": "A before nk = short a sound",
         "slug": "a-before-nk-short-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0064",
         "rule": "A before ld = long a sound",
         "slug": "a-before-ld-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0065",
@@ -403,67 +403,67 @@
         "id": "PR0066",
         "rule": "A before lm = long a sound",
         "slug": "a-before-lm-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0067",
         "rule": "A before lp = long a sound",
         "slug": "a-before-lp-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0068",
         "rule": "A before lt = long a sound",
         "slug": "a-before-lt-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0069",
         "rule": "A before lv = long a sound",
         "slug": "a-before-lv-long-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0070",
         "rule": "A before ll = short a sound",
         "slug": "a-before-ll-short-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0071",
         "rule": "E before ll = short e sound",
         "slug": "e-before-ll-short-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0072",
         "rule": "I before ll = short i sound",
         "slug": "i-before-ll-short-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0073",
         "rule": "O before ll = short o sound",
         "slug": "o-before-ll-short-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0074",
         "rule": "U before ll = short u sound",
         "slug": "u-before-ll-short-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0075",
         "rule": "A before ss = short a sound",
         "slug": "a-before-ss-short-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0076",
         "rule": "E before ss = short e sound",
         "slug": "e-before-ss-short-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0077",
@@ -481,7 +481,7 @@
         "id": "PR0079",
         "rule": "U before ss = short u sound",
         "slug": "u-before-ss-short-u-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0080",
@@ -499,13 +499,13 @@
         "id": "PR0082",
         "rule": "I before st = short i sound",
         "slug": "i-before-st-short-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0083",
         "rule": "O before st = long o sound",
         "slug": "o-before-st-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0084",
@@ -517,25 +517,25 @@
         "id": "PR0085",
         "rule": "A before str = short a sound",
         "slug": "a-before-str-short-a-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0086",
         "rule": "E before str = short e sound",
         "slug": "e-before-str-short-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0087",
         "rule": "I before str = short i sound",
         "slug": "i-before-str-short-i-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0088",
         "rule": "O before str = long o sound",
         "slug": "o-before-str-long-o-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0089",
@@ -583,7 +583,7 @@
         "id": "PR0096",
         "rule": "Vowel + r at end = r-colored vowel",
         "slug": "vowel-r-at-end-r-colored-vowel",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0097",
@@ -625,25 +625,25 @@
         "id": "PR0103",
         "rule": "Vowel + rm = r-colored vowel",
         "slug": "vowel-rm-r-colored-vowel",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0104",
         "rule": "Vowel + rp = r-colored vowel",
         "slug": "vowel-rp-r-colored-vowel",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0105",
         "rule": "Vowel + rk = r-colored vowel",
         "slug": "vowel-rk-r-colored-vowel",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0106",
         "rule": "Ae digraph = long e sound",
         "slug": "ae-digraph-long-e-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0107",
@@ -660,7 +660,7 @@
         "id": "PR0108",
         "rule": "C before e = soft c sound",
         "slug": "c-before-e-soft-c-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0109",
@@ -678,7 +678,7 @@
         "id": "PR0111",
         "rule": "C before a = hard c sound",
         "slug": "c-before-a-hard-c-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0112",
@@ -696,13 +696,13 @@
         "id": "PR0114",
         "rule": "C before consonant = hard c sound",
         "slug": "c-before-consonant-hard-c-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0115",
         "rule": "C at word end = hard c sound",
         "slug": "c-at-word-end-hard-c-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0116",
@@ -720,19 +720,19 @@
         "id": "PR0118",
         "rule": "G before e = soft g sound",
         "slug": "g-before-e-soft-g-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0119",
         "rule": "G before i = soft g sound",
         "slug": "g-before-i-soft-g-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0120",
         "rule": "G before y = soft g sound",
         "slug": "g-before-y-soft-g-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0121",
@@ -780,7 +780,7 @@
         "id": "PR0128",
         "rule": "GH before t = f sound",
         "slug": "gh-before-t-f-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0129",
@@ -828,7 +828,7 @@
         "id": "PR0136",
         "rule": "TH digraph = th sound",
         "slug": "th-digraph-th-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0137",
@@ -840,7 +840,7 @@
         "id": "PR0138",
         "rule": "TH voiceless = th sound",
         "slug": "th-voiceless-th-sound",
-        "done": 0
+        "done": 1
       },
       {
         "id": "PR0139",
