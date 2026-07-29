@@ -25,6 +25,12 @@
                     <p>AI Dictionary Generator Dashboard</p>
                 </div>
             </div>
+            
+            <div class="dashboard-tabs">
+                <button class="dash-tab" data-tab="words"><i class="fa-solid fa-book"></i> Vocabulary</button>
+                <button class="dash-tab active" data-tab="rules"><i class="fa-solid fa-scroll"></i> Pronunciation Rules</button>
+            </div>
+
             <div class="connection-status">
                 <span class="pulse-indicator"></span>
                 <span class="status-label">Live Sync Active</span>
@@ -147,7 +153,7 @@
                 </div>
             </div>
             
-            <div class="log-table-wrapper">
+            <div class="log-table-wrapper" id="words-table-wrapper" style="display: none;">
                 <table class="log-table">
                     <thead>
                         <tr>
@@ -159,7 +165,30 @@
                             <th>Timestamp</th>
                         </tr>
                     </thead>
-                    <tbody id="log-body">
+                    <tbody id="words-log-body">
+                        <tr>
+                            <td colspan="6" class="loading-state">
+                                <div class="spinner"></div>
+                                <p>Waiting for data feed...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="log-table-wrapper" id="rules-table-wrapper">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Rule ID</th>
+                            <th>Category</th>
+                            <th>Rule Text</th>
+                            <th>Status</th>
+                            <th>File Outputs</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rules-log-body">
                         <tr>
                             <td colspan="6" class="loading-state">
                                 <div class="spinner"></div>
@@ -183,16 +212,13 @@
             progressCircle.style.strokeDashoffset = offset;
         }
 
+        let currentTab = 'rules';
         let currentFilter = 'all';
         let statsData = null;
-
-
 
         const SUPABASE_URL = "https://fjmimidvlcrnklrsshyd.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqbWltaWR2bGNybmtscnNzaHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTU4MTYsImV4cCI6MjEwMDgzMTgxNn0.WKEaYVjMp7FUJ_gtmuf-lwlaWQgjUYwSv7IlIx6Ayxg";
 
-        // Poll stats
-        // Helper to parse Content-Range header total count
         function parseRangeCount(res) {
             const range = res.headers.get('content-range');
             if (!range) return 0;
@@ -200,8 +226,7 @@
             return parts.length > 1 ? parseInt(parts[1], 10) : 0;
         }
 
-        // Poll stats
-        async function fetchStats() {
+        async function fetchWordsStats() {
             try {
                 const headers = {
                     "apikey": SUPABASE_KEY,
@@ -213,7 +238,6 @@
                     "Prefer": "count=exact"
                 };
 
-                // Query counts in parallel using Content-Range header to bypass 1000 row capping
                 const [successRes, failedRes, verifiedRes, unverifiedRes, logsRes] = await Promise.all([
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?status=eq.success&limit=0`, { headers: headersWithCount }),
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?status=eq.error&limit=0`, { headers: headersWithCount }),
@@ -231,9 +255,8 @@
                 const unverified = parseRangeCount(unverifiedRes);
                 const recent_logs = await logsRes.json();
 
-                // Dynamic stats from latest log if available, otherwise fall back to row counting
-                let total = 15246; // Default target fallback
-                let completed = parseRangeCount(successRes); // Default count fallback
+                let total = 15246;
+                let completed = parseRangeCount(successRes);
                 let remaining = Math.max(0, total - completed);
 
                 if (recent_logs && recent_logs.length > 0) {
@@ -268,29 +291,195 @@
                     recent_logs
                 };
 
-                updateDashboard(statsData);
+                if (currentTab === 'words') {
+                    updateDashboard(statsData);
+                }
             } catch (err) {
-                console.error('Error fetching stats:', err);
-                document.querySelector('.connection-status').classList.add('error');
-                document.querySelector('.status-label').textContent = 'Disconnected';
+                console.error('Error fetching words stats:', err);
+                if (currentTab === 'words') {
+                    document.querySelector('.connection-status').classList.add('error');
+                    document.querySelector('.status-label').textContent = 'Disconnected';
+                    
+                    const body = document.getElementById('log-body');
+                    body.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="empty-state" style="color: var(--color-danger); padding: 2rem;">
+                                <i class="fa-solid fa-circle-exclamation" style="font-size: 2.2rem; margin-bottom: 0.75rem; display: block;"></i>
+                                <p><strong>Failed to connect to Supabase Cloud Database.</strong></p>
+                                <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                                    If you opened this file directly from your local folders (using a <code>file://</code> URL), browser CORS security policies will block connection. 
+                                    <br><br>
+                                    To view this locally, run a simple Python web server in this directory:
+                                    <br><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python -m http.server 8000</code>
+                                    <br>and navigate to <strong>http://localhost:8000</strong>.
+                                </p>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+
+        async function fetchRulesStats() {
+            try {
+                // 1. Fetch local rules.json to get metadata and list of all rules
+                const localRes = await fetch('rules.json');
+                if (!localRes.ok) {
+                    throw new Error('Failed to load local rules.json');
+                }
+                const rulesDataFile = await localRes.json();
                 
-                // Show a helpful error message in the table body instead of spinning forever
-                const body = document.getElementById('log-body');
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="empty-state" style="color: var(--color-danger); padding: 2rem;">
-                            <i class="fa-solid fa-circle-exclamation" style="font-size: 2.2rem; margin-bottom: 0.75rem; display: block;"></i>
-                            <p><strong>Failed to connect to Supabase Cloud Database.</strong></p>
-                            <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
-                                If you opened this file directly from your local folders (using a <code>file://</code> URL), browser CORS security policies will block connection. 
-                                <br><br>
-                                To view this locally, run a simple Python web server in this directory:
-                                <br><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python -m http.server 8000</code>
-                                <br>and navigate to <strong>http://localhost:8000</strong>.
-                            </p>
-                        </td>
-                    </tr>
-                `;
+                const allRules = [];
+                for (const catKey in rulesDataFile) {
+                    if (catKey === 'metadata') continue;
+                    const catVal = rulesDataFile[catKey];
+                    if (catVal && Array.isArray(catVal.rules)) {
+                        catVal.rules.forEach(r => {
+                            allRules.push({
+                                ...r,
+                                category: catKey.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
+                            });
+                        });
+                    }
+                }
+                const total = allRules.length;
+                
+                // 2. Query Supabase for rules stats
+                const headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": `Bearer ${SUPABASE_KEY}`
+                };
+
+                const headersWithCount = {
+                    ...headers,
+                    "Prefer": "count=exact"
+                };
+
+                const [successRes, failedRes, logsRes] = await Promise.all([
+                    fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?status=eq.success&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?status=eq.error&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?select=*&order=timestamp.desc&limit=50`, { headers })
+                ]);
+
+                if (!successRes.ok || !failedRes.ok || !logsRes.ok) {
+                    throw new Error('Failed to fetch rules stats from Supabase');
+                }
+
+                const completed = parseRangeCount(successRes);
+                const failed = parseRangeCount(failedRes);
+                const db_logs = await logsRes.json();
+                
+                // Use latest log stats if available
+                let finalCompleted = completed;
+                let finalTotal = total;
+                let finalRemaining = Math.max(0, finalTotal - finalCompleted);
+                
+                if (db_logs && db_logs.length > 0) {
+                    for (const log of db_logs) {
+                        if (log.message && log.message.includes('| Stats:')) {
+                            try {
+                                const statsPart = log.message.split('| Stats:')[1].trim();
+                                const stats = JSON.parse(statsPart);
+                                if (stats && typeof stats.total === 'number') {
+                                    finalTotal = stats.total;
+                                    finalCompleted = stats.completed;
+                                    finalRemaining = stats.remaining;
+                                    break;
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse stats from log:', e);
+                            }
+                        }
+                    }
+                }
+                
+                const percent = finalTotal > 0 ? parseFloat((finalCompleted / finalTotal * 100).toFixed(2)) : 0;
+                
+                // Construct a combined list for the Processing Stream
+                const loggedIds = new Set(db_logs.map(log => log.word.split(':')[0].trim()));
+                const pendingLogs = allRules
+                    .filter(r => r.done === 0 && !loggedIds.has(r.id))
+                    .map(r => {
+                        return {
+                            word: `${r.id}: ${r.slug}`,
+                            status: 'pending',
+                            gemini_correct: null,
+                            gemini_reason: r.rule,
+                            message: `Pending parsing and processing`,
+                            timestamp: null,
+                            rule_id: r.id,
+                            category: r.category,
+                            rule_text: r.rule,
+                            outputs: 'Pending'
+                        };
+                    });
+                
+                const processedLogs = db_logs.map(log => {
+                    const ruleId = log.word.split(':')[0].trim();
+                    const localRule = allRules.find(r => r.id === ruleId);
+                    return {
+                        word: log.word,
+                        status: log.status,
+                        gemini_correct: log.gemini_correct,
+                        gemini_reason: log.gemini_reason,
+                        message: log.message,
+                        timestamp: log.timestamp,
+                        rule_id: ruleId,
+                        category: localRule ? localRule.category : 'General',
+                        rule_text: log.gemini_reason,
+                        outputs: log.status === 'success' 
+                            ? `JSON: rules/${ruleId.toLowerCase()}.json<br>Audio: rules_audio/${ruleId.toLowerCase()}/`
+                            : 'Failed'
+                    };
+                });
+                
+                const recent_logs = [...processedLogs, ...pendingLogs];
+                
+                statsData = {
+                    total: finalTotal,
+                    completed: finalCompleted,
+                    verified: finalCompleted,
+                    unverified: finalRemaining,
+                    failed,
+                    remaining: finalRemaining,
+                    percent,
+                    recent_logs
+                };
+                
+                if (currentTab === 'rules') {
+                    updateDashboard(statsData);
+                }
+            } catch (err) {
+                console.error('Error fetching rules stats:', err);
+                if (currentTab === 'rules') {
+                    document.querySelector('.connection-status').classList.add('error');
+                    document.querySelector('.status-label').textContent = 'Disconnected';
+                    
+                    const body = document.getElementById('rules-log-body');
+                    body.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="empty-state" style="color: var(--color-danger); padding: 2rem;">
+                                <i class="fa-solid fa-circle-exclamation" style="font-size: 2.2rem; margin-bottom: 0.75rem; display: block;"></i>
+                                <p><strong>Failed to retrieve rules data from Supabase.</strong></p>
+                                <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                                    Could not connect to Supabase Cloud Database or read local rules.json. 
+                                    <br><br>
+                                    To view this locally, make sure you are running a local Python web server:
+                                    <br><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python -m http.server 8000</code>
+                                    <br>and open <strong>http://localhost:8000</strong>.
+                                </p>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+
+        async function fetchStats() {
+            if (currentTab === 'words') {
+                await fetchWordsStats();
+            } else {
+                await fetchRulesStats();
             }
         }
 
@@ -360,7 +549,7 @@
             document.getElementById('progress-total').textContent = data.total.toLocaleString();
             document.getElementById('stats-verified').textContent = data.verified.toLocaleString();
             document.getElementById('stats-unverified').textContent = data.unverified.toLocaleString();
-            document.getElementById('stats-remaining').textContent = data.remaining.toLocaleString();
+            document.getElementById('stats-remaining').textContent = (currentTab === 'words' ? data.remaining : data.total).toLocaleString();
             document.getElementById('stats-failed').textContent = data.failed.toLocaleString();
 
             // Progress text and ring
@@ -372,37 +561,53 @@
         }
 
         function renderLogs(logs) {
-            const body = document.getElementById('log-body');
+            const isWords = currentTab === 'words';
+            const body = document.getElementById(isWords ? 'words-log-body' : 'rules-log-body');
             const searchVal = document.getElementById('log-search').value.toLowerCase();
 
             // Filter logs
             const filtered = logs.filter(log => {
                 const wordVal = (log.word || '').toLowerCase();
                 const msgVal = (log.message || '').toLowerCase();
-                const matchesSearch = wordVal.includes(searchVal) || msgVal.includes(searchVal);
+                const reasonVal = (log.gemini_reason || '').toLowerCase();
+                const matchesSearch = wordVal.includes(searchVal) || msgVal.includes(searchVal) || reasonVal.includes(searchVal);
                 const matchesTab = currentFilter === 'all' || log.status === currentFilter;
                 return matchesSearch && matchesTab;
             });
 
             if (filtered.length === 0) {
-                body.innerHTML = `<tr><td colspan="6" class="empty-state">No matching logs found</td></tr>`;
+                const colSpan = isWords ? 6 : 6;
+                body.innerHTML = `<tr><td colspan="${colSpan}" class="empty-state">No matching logs found</td></tr>`;
                 return;
             }
 
             body.innerHTML = filtered.map(log => {
-                const isSuccess = log.status === 'success';
-                const statusBadge = isSuccess 
-                    ? `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Success</span>`
-                    : `<span class="badge badge-danger"><i class="fa-solid fa-xmark"></i> Error</span>`;
+                let statusBadge = '';
+                if (log.status === 'success') {
+                    statusBadge = `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Success</span>`;
+                } else if (log.status === 'error') {
+                    statusBadge = `<span class="badge badge-danger"><i class="fa-solid fa-xmark"></i> Error</span>`;
+                } else {
+                    statusBadge = `<span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Pending</span>`;
+                }
                 
-                let correctBadge = '<span class="badge badge-gray">Unknown</span>';
-                if (log.gemini_correct === 1) {
-                    correctBadge = '<span class="badge badge-success-light">Verified (1)</span>';
-                } else if (log.gemini_correct === 0) {
-                    correctBadge = '<span class="badge badge-danger-light">Unverified (0)</span>';
+                let correctBadge = '';
+                if (isWords) {
+                    if (log.gemini_correct === 1) {
+                        correctBadge = '<span class="badge badge-success-light">Verified (1)</span>';
+                    } else if (log.gemini_correct === 0) {
+                        correctBadge = '<span class="badge badge-danger-light">Unverified (0)</span>';
+                    } else {
+                        correctBadge = '<span class="badge badge-gray">Unknown</span>';
+                    }
+                } else {
+                    if (log.status === 'success') {
+                        correctBadge = '<span class="badge badge-success-light"><i class="fa-solid fa-circle-check"></i> Processed</span>';
+                    } else {
+                        correctBadge = '<span class="badge badge-warning-light"><i class="fa-solid fa-circle-notch fa-spin"></i> Pending</span>';
+                    }
                 }
 
-                // Extract word duration from message
                 let durationBadge = '<span class="badge badge-gray">N/A</span>';
                 if (log.message) {
                     const match = log.message.match(/\[Time:\s*([\d\.]+)s\]/);
@@ -411,7 +616,6 @@
                     }
                 }
 
-                // Format timestamp in BD time zone (Asia/Dhaka)
                 let timeStr = 'N/A';
                 if (log.timestamp) {
                     try {
@@ -428,26 +632,46 @@
                     } catch(e){}
                 }
 
-                const escapedReason = escapeHTML(log.gemini_reason || '');
-                let escapedMessage = escapeHTML(log.message || '');
-                if (escapedMessage.includes('| Stats:')) {
-                    escapedMessage = escapedMessage.split('| Stats:')[0].trim();
+                if (isWords) {
+                    const escapedReason = escapeHTML(log.gemini_reason || '');
+                    let escapedMessage = escapeHTML(log.message || '');
+                    if (escapedMessage.includes('| Stats:')) {
+                        escapedMessage = escapedMessage.split('| Stats:')[0].trim();
+                    }
+
+                    const detailMsg = escapedReason 
+                        ? `<strong>Reason:</strong> ${escapedReason}<br><small>${escapedMessage}</small>` 
+                        : escapedMessage;
+
+                    return `
+                        <tr class="${log.status === 'error' ? 'row-error' : ''}">
+                            <td class="word-col">${escapeHTML(log.word || '')}</td>
+                            <td>${statusBadge}</td>
+                            <td>${correctBadge}</td>
+                            <td class="msg-col">${detailMsg}</td>
+                            <td>${durationBadge}</td>
+                            <td class="time-col">${timeStr}</td>
+                        </tr>
+                    `;
+                } else {
+                    const outputsHtml = log.status === 'success'
+                        ? `<small style="font-family: monospace; display: block; color: var(--accent-cyan); line-height: 1.4;">
+                             JSON: <a href="rules/${log.rule_id.toLowerCase()}.json" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">rules/${log.rule_id.toLowerCase()}.json</a><br>
+                             Audio: <a href="rules_audio/${log.rule_id.toLowerCase()}/" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">rules_audio/${log.rule_id.toLowerCase()}/</a>
+                           </small>`
+                        : `<span class="text-secondary">${escapeHTML(log.message || 'Pending')}</span>`;
+                        
+                    return `
+                        <tr class="${log.status === 'error' ? 'row-error' : ''}">
+                            <td class="word-col" style="font-weight: 600; color: var(--accent-purple);">${escapeHTML(log.rule_id || '')}</td>
+                            <td style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;">${escapeHTML(log.category || '')}</td>
+                            <td style="font-weight: 500; font-size: 0.9rem;">${escapeHTML(log.rule_text || '')}</td>
+                            <td>${statusBadge}</td>
+                            <td class="msg-col">${outputsHtml}</td>
+                            <td class="time-col">${timeStr}</td>
+                        </tr>
+                    `;
                 }
-
-                const detailMsg = escapedReason 
-                    ? `<strong>Reason:</strong> ${escapedReason}<br><small>${escapedMessage}</small>` 
-                    : escapedMessage;
-
-                return `
-                    <tr class="${log.status === 'error' ? 'row-error' : ''}">
-                        <td class="word-col">${escapeHTML(log.word || '')}</td>
-                        <td>${statusBadge}</td>
-                        <td>${correctBadge}</td>
-                        <td class="msg-col">${detailMsg}</td>
-                        <td>${durationBadge}</td>
-                        <td class="time-col">${timeStr}</td>
-                    </tr>
-                `;
             }).join('');
         }
 
@@ -462,7 +686,7 @@
             if (statsData) renderLogs(statsData.recent_logs);
         });
 
-        // Tabs
+        // Filter buttons (All/Success/Errors)
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -472,7 +696,80 @@
             });
         });
 
-        // Initial fetch
+        // Dashboard Tabs (Vocabulary vs Pronunciation Rules)
+        document.querySelectorAll('.dash-tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', (e) => {
+                const btn = e.currentTarget;
+                document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                currentTab = btn.getAttribute('data-tab');
+                updateLabels(currentTab);
+                
+                const isWords = currentTab === 'words';
+                document.getElementById('words-table-wrapper').style.display = isWords ? 'block' : 'none';
+                document.getElementById('rules-table-wrapper').style.display = isWords ? 'none' : 'block';
+                
+                // Clear state while loading
+                const body = document.getElementById(isWords ? 'words-log-body' : 'rules-log-body');
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading ${isWords ? 'Vocabulary' : 'Rules'} statistics...</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // Immediately refresh stats
+                fetchStats();
+            });
+        });
+
+        function updateLabels(tab) {
+            const isWords = tab === 'words';
+            
+            document.querySelector('.progress-stats .label').textContent = isWords ? 'Words Processed' : 'Rules Processed';
+            
+            const verifiedCard = document.querySelector('.verified-card');
+            verifiedCard.querySelector('h3').textContent = isWords ? 'Spelling Verified' : 'Rules Processed';
+            verifiedCard.querySelector('.label').textContent = isWords ? 'gemini_correct == 1' : 'done == 1';
+            
+            const unverifiedCard = document.querySelector('.unverified-card');
+            unverifiedCard.querySelector('h3').textContent = isWords ? 'Spelling Unverified' : 'Rules Remaining';
+            unverifiedCard.querySelector('.label').textContent = isWords ? 'gemini_correct == 0' : 'done == 0';
+            
+            const remainingCard = document.querySelector('.remaining-card');
+            remainingCard.querySelector('h3').textContent = isWords ? 'Remaining Words' : 'Total Rules';
+            remainingCard.querySelector('.label').textContent = isWords ? 'Pending processing' : 'In database';
+            
+            const failedCard = document.querySelector('.failed-card');
+            failedCard.querySelector('h3').textContent = isWords ? 'API Errors' : 'API Errors';
+            failedCard.querySelector('.label').textContent = isWords ? 'In current run' : 'During rule processing';
+            
+            document.getElementById('log-search').placeholder = isWords ? 'Search words...' : 'Search rules...';
+            
+            const timerCard = document.querySelector('.session-timer-card');
+            timerCard.style.display = isWords ? 'flex' : 'none';
+
+            const networkCard = document.querySelector('.network-card');
+            networkCard.querySelector('h3').textContent = isWords ? 'Supabase Cloud Sync' : 'Local JSON Database';
+            networkCard.querySelector('.desc').textContent = isWords 
+                ? 'Since this dashboard connects directly to Supabase, it is accessible globally once deployed on Vercel:'
+                : 'Rules are tracked directly in the local rules.json file in your workspace:';
+            networkCard.querySelector('.network-address span').textContent = isWords 
+                ? 'https://fjmimidvlcrnklrsshyd.supabase.co' 
+                : 'rules.json';
+            networkCard.querySelector('.network-address i').className = isWords 
+                ? 'fa-solid fa-cloud' 
+                : 'fa-solid fa-file-code';
+            networkCard.querySelector('.qr-placeholder p').textContent = isWords 
+                ? 'Fully wireless cloud synchronization' 
+                : 'Local JSON file tracking';
+        }
+
+        // Initial setup
+        updateLabels(currentTab);
         fetchStats();
         // Poll every 3 seconds
         setInterval(fetchStats, 3000);

@@ -9,6 +9,7 @@
 !style.css
 !.gitignore
 !README.md
+!rules.json
 
 # Exclude local environments, system caches, and secrets
 .venv/
