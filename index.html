@@ -355,11 +355,34 @@
                     "Prefer": "count=exact"
                 };
 
-                const [successRes, failedRes, logsRes] = await Promise.all([
-                    fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?status=eq.success&limit=0`, { headers: headersWithCount }),
-                    fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?status=eq.error&limit=0`, { headers: headersWithCount }),
-                    fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?select=*&order=timestamp.desc&limit=100`, { headers })
-                ]);
+                // Check table existence first, fallback to processing_log if rules_processing_log is missing (404)
+                let successRes, failedRes, logsRes;
+                let usingNewTable = true;
+
+                try {
+                    const testRes = await fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?limit=1`, { headers });
+                    if (testRes.status === 404) {
+                        usingNewTable = false;
+                    }
+                } catch (e) {
+                    usingNewTable = false;
+                }
+
+                if (usingNewTable) {
+                    console.log("Querying rules_processing_log...");
+                    [successRes, failedRes, logsRes] = await Promise.all([
+                        fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?status=eq.success&limit=0`, { headers: headersWithCount }),
+                        fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?status=eq.error&limit=0`, { headers: headersWithCount }),
+                        fetch(`${SUPABASE_URL}/rest/v1/rules_processing_log?select=*&order=timestamp.desc&limit=100`, { headers })
+                    ]);
+                } else {
+                    console.log("rules_processing_log not found, falling back to processing_log...");
+                    [successRes, failedRes, logsRes] = await Promise.all([
+                        fetch(`${SUPABASE_URL}/rest/v1/processing_log?word=like.PR%25&status=eq.success&limit=0`, { headers: headersWithCount }),
+                        fetch(`${SUPABASE_URL}/rest/v1/processing_log?word=like.PR%25&status=eq.error&limit=0`, { headers: headersWithCount }),
+                        fetch(`${SUPABASE_URL}/rest/v1/processing_log?word=like.PR%25&select=*&order=timestamp.desc&limit=100`, { headers })
+                    ]);
+                }
 
                 if (!successRes.ok || !failedRes.ok || !logsRes.ok) {
                     throw new Error('Failed to fetch rules stats from Supabase');
