@@ -321,6 +321,9 @@
         }
 
         async function fetchRulesStats() {
+            let allRules = [];
+            let total = 0;
+            
             try {
                 // 1. Fetch local rules.json to get metadata and list of all rules
                 const localRes = await fetch('rules.json');
@@ -329,7 +332,6 @@
                 }
                 const rulesDataFile = await localRes.json();
                 
-                const allRules = [];
                 for (const catKey in rulesDataFile) {
                     if (catKey === 'metadata') continue;
                     const catVal = rulesDataFile[catKey];
@@ -342,8 +344,19 @@
                         });
                     }
                 }
-                const total = allRules.length;
-                
+                total = allRules.length;
+            } catch (localErr) {
+                console.error('Error loading rules.json:', localErr);
+                if (currentTab === 'rules') {
+                    document.querySelector('.connection-status').classList.add('error');
+                    document.querySelector('.status-label').textContent = 'Disconnected';
+                    const body = document.getElementById('rules-log-body');
+                    body.innerHTML = `<tr><td colspan="6" class="loading-state"><p style="color: var(--color-danger)">Failed to load rules.json metadata.</p></td></tr>`;
+                }
+                return;
+            }
+
+            try {
                 // 2. Query Supabase for rules stats
                 const headers = {
                     "apikey": SUPABASE_KEY,
@@ -369,7 +382,6 @@
                 const failed = parseRangeCount(failedRes);
                 const db_logs = await logsRes.json();
                 
-                // Use latest log stats if available
                 let finalCompleted = completed;
                 let finalTotal = total;
                 let finalRemaining = Math.max(0, finalTotal - finalCompleted);
@@ -395,7 +407,6 @@
                 
                 const percent = finalTotal > 0 ? parseFloat((finalCompleted / finalTotal * 100).toFixed(2)) : 0;
                 
-                // Construct a combined list for the Processing Stream
                 const loggedIds = new Set(db_logs.map(log => log.word.split(':')[0].trim()));
                 const pendingLogs = allRules
                     .filter(r => r.done === 0 && !loggedIds.has(r.id))
@@ -447,30 +458,56 @@
                 };
                 
                 if (currentTab === 'rules') {
+                    document.querySelector('.connection-status').classList.remove('error');
+                    document.querySelector('.status-label').textContent = 'Live Sync Active';
                     updateDashboard(statsData);
                 }
-            } catch (err) {
-                console.error('Error fetching rules stats:', err);
+            } catch (dbErr) {
+                console.warn('Supabase fetch failed, falling back to local rules.json done-flags progress:', dbErr);
+                
+                const localCompleted = allRules.filter(r => r.done === 1).length;
+                const localRemaining = total - localCompleted;
+                const percent = total > 0 ? parseFloat((localCompleted / total * 100).toFixed(2)) : 0;
+                
+                const sortedRules = [...allRules].sort((a, b) => {
+                    if (a.done !== b.done) {
+                        return b.done - a.done;
+                    }
+                    return b.id.localeCompare(a.id);
+                });
+                
+                const recent_logs = sortedRules.map(r => {
+                    return {
+                        word: `${r.id}: ${r.slug}`,
+                        status: r.done === 1 ? 'success' : 'pending',
+                        gemini_correct: r.done === 1 ? 1 : null,
+                        gemini_reason: r.rule,
+                        message: r.done === 1 
+                            ? `Successfully structured rule (Local cache). Files: rules/${r.id.toLowerCase()}.json, audio: rules_audio/${r.id.toLowerCase()}/`
+                            : `Pending parsing and processing`,
+                        timestamp: null,
+                        rule_id: r.id,
+                        category: r.category,
+                        rule_text: r.rule,
+                        outputs: r.done === 1 ? `JSON: rules/${r.id.toLowerCase()}.json<br>Audio: rules_audio/${r.id.toLowerCase()}/` : 'Pending'
+                    };
+                });
+                
+                statsData = {
+                    total,
+                    completed: localCompleted,
+                    verified: localCompleted,
+                    unverified: localRemaining,
+                    failed: 0,
+                    remaining: localRemaining,
+                    percent,
+                    recent_logs
+                };
+                
                 if (currentTab === 'rules') {
-                    document.querySelector('.connection-status').classList.add('error');
-                    document.querySelector('.status-label').textContent = 'Disconnected';
-                    
-                    const body = document.getElementById('rules-log-body');
-                    body.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="empty-state" style="color: var(--color-danger); padding: 2rem;">
-                                <i class="fa-solid fa-circle-exclamation" style="font-size: 2.2rem; margin-bottom: 0.75rem; display: block;"></i>
-                                <p><strong>Failed to retrieve rules data from Supabase.</strong></p>
-                                <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
-                                    Could not connect to Supabase Cloud Database or read local rules.json. 
-                                    <br><br>
-                                    To view this locally, make sure you are running a local Python web server:
-                                    <br><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python -m http.server 8000</code>
-                                    <br>and open <strong>http://localhost:8000</strong>.
-                                </p>
-                            </td>
-                        </tr>
-                    `;
+                    document.querySelector('.connection-status').classList.remove('error');
+                    document.querySelector('.status-label').textContent = 'Local File Sync';
+                    updateDashboard(statsData);
                 }
             }
         }
