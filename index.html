@@ -212,7 +212,7 @@
             progressCircle.style.strokeDashoffset = offset;
         }
 
-        let currentTab = 'rules';
+        let currentTab = 'words';
         let currentFilter = 'all';
         let statsData = null;
 
@@ -239,11 +239,11 @@
                 };
 
                 const [successRes, failedRes, verifiedRes, unverifiedRes, logsRes] = await Promise.all([
-                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?status=eq.success&limit=0`, { headers: headersWithCount }),
-                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?status=eq.error&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Successfully updated missing fields%25&status=eq.success&limit=0`, { headers: headersWithCount }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Updater%25&status=eq.error&limit=0`, { headers: headersWithCount }),
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?gemini_correct=eq.1&limit=0`, { headers: headersWithCount }),
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?gemini_correct=eq.0&limit=0`, { headers: headersWithCount }),
-                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?select=*&order=timestamp.desc&limit=50`, { headers })
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Updater%25&select=*&order=timestamp.desc&limit=50`, { headers })
                 ]);
 
                 if (!successRes.ok || !failedRes.ok || !verifiedRes.ok || !unverifiedRes.ok || !logsRes.ok) {
@@ -255,7 +255,7 @@
                 const unverified = parseRangeCount(unverifiedRes);
                 const recent_logs = await logsRes.json();
 
-                let total = 15246;
+                let total = 14951;
                 let completed = parseRangeCount(successRes);
                 let remaining = Math.max(0, total - completed);
 
