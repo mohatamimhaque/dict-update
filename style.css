@@ -761,3 +761,102 @@ body {
     box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
 }
 
+/* Worker Progress Section Styling */
+.workers-section {
+    margin-bottom: 2.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.workers-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-top: 1.25rem;
+}
+
+.worker-progress-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    gap: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.worker-progress-card.inactive {
+    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.worker-progress-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.worker-info-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 160px;
+}
+
+.worker-label {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.worker-label i {
+    color: var(--accent-purple);
+}
+
+.worker-label i.fa-spin {
+    color: var(--accent-cyan);
+}
+
+.worker-percent {
+    font-weight: 700;
+    color: var(--accent-cyan);
+    font-size: 0.95rem;
+    min-width: 45px;
+}
+
+.worker-bar-wrapper {
+    flex: 1;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.worker-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+    border-radius: 6px;
+    width: 0%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.worker-stats {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    min-width: 280px;
+    text-align: right;
+    font-weight: 500;
+}
+

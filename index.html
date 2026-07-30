@@ -136,6 +136,16 @@
             </div>
         </section>
 
+        <!-- Worker Progress Section -->
+        <section class="workers-section" id="workers-section" style="display: none;">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-gears"></i> Active Worker Processes</h2>
+            </div>
+            <div class="workers-grid" id="workers-grid">
+                <!-- Dynamically generated worker bars -->
+            </div>
+        </section>
+
         <!-- Log Area -->
         <section class="log-section">
             <div class="section-header">
@@ -238,15 +248,16 @@
                     "Prefer": "count=exact"
                 };
 
-                const [successRes, failedRes, verifiedRes, unverifiedRes, logsRes] = await Promise.all([
+                 const [successRes, failedRes, verifiedRes, unverifiedRes, logsRes, workersRes] = await Promise.all([
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Successfully updated missing fields%25&status=eq.success&limit=0`, { headers: headersWithCount }),
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Updater%25&status=eq.error&limit=0`, { headers: headersWithCount }),
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?gemini_correct=eq.1&limit=0`, { headers: headersWithCount }),
                     fetch(`${SUPABASE_URL}/rest/v1/processing_log?gemini_correct=eq.0&limit=0`, { headers: headersWithCount }),
-                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Updater%25&select=*&order=timestamp.desc&limit=50`, { headers })
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?message=ilike.%25Updater%25&select=*&order=timestamp.desc&limit=50`, { headers }),
+                    fetch(`${SUPABASE_URL}/rest/v1/processing_log?word=like.WORKER_STATUS_%25&select=*&order=timestamp.desc&limit=100`, { headers })
                 ]);
 
-                if (!successRes.ok || !failedRes.ok || !verifiedRes.ok || !unverifiedRes.ok || !logsRes.ok) {
+                if (!successRes.ok || !failedRes.ok || !verifiedRes.ok || !unverifiedRes.ok || !logsRes.ok || !workersRes.ok) {
                     throw new Error('Failed to fetch stats from Supabase');
                 }
 
@@ -254,6 +265,7 @@
                 const verified = parseRangeCount(verifiedRes);
                 const unverified = parseRangeCount(unverifiedRes);
                 const recent_logs = await logsRes.json();
+                const recent_workers = await workersRes.json();
 
                 let total = 14951;
                 let completed = parseRangeCount(successRes);
@@ -288,7 +300,8 @@
                     failed,
                     remaining,
                     percent,
-                    recent_logs
+                    recent_logs,
+                    recent_workers
                 };
 
                 if (currentTab === 'words') {
@@ -581,6 +594,90 @@
 
             // Render logs
             renderLogs(data.recent_logs);
+
+            // Render workers
+            renderWorkers(data.recent_workers || []);
+        }
+
+        function renderWorkers(workersLogs) {
+            const workersSection = document.getElementById('workers-section');
+            const workersGrid = document.getElementById('workers-grid');
+            
+            if (currentTab !== 'words' || !workersLogs || workersLogs.length === 0) {
+                workersSection.style.display = 'none';
+                return;
+            }
+            
+            const latestWorkers = {};
+            for (const log of workersLogs) {
+                const workerId = log.word.replace('WORKER_STATUS_', '');
+                if (!latestWorkers[workerId]) {
+                    try {
+                        const wData = JSON.parse(log.message);
+                        const logTime = new Date(log.timestamp).getTime();
+                        const now = Date.now();
+                        const isRecent = (now - logTime) < 5 * 60 * 1000; // 5 mins threshold
+                        latestWorkers[workerId] = {
+                            ...wData,
+                            timestamp: log.timestamp,
+                            active: isRecent
+                        };
+                    } catch (e) {
+                        // ignore malformed worker statuses
+                    }
+                }
+            }
+            
+            const sortedIds = Object.keys(latestWorkers).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            if (sortedIds.length === 0) {
+                workersSection.style.display = 'none';
+                return;
+            }
+            
+            workersSection.style.display = 'block';
+            workersGrid.innerHTML = sortedIds.map(id => {
+                const worker = latestWorkers[id];
+                const percent = worker.total > 0 ? parseFloat(((worker.current / worker.total) * 100).toFixed(1)) : 0;
+                
+                const formatTime = (secs) => {
+                    if (isNaN(secs) || secs < 0) return '00:00';
+                    const m = Math.floor(secs / 60);
+                    const s = Math.floor(secs % 60);
+                    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                };
+                
+                const elapsedStr = formatTime(worker.elapsed);
+                const speed = worker.current > 0 ? (worker.elapsed / worker.current) : 0;
+                const remainingSecs = worker.current > 0 ? (worker.total - worker.current) * speed : 0;
+                const remainingStr = formatTime(remainingSecs);
+                
+                let speedStr = 'N/A';
+                if (speed > 0) {
+                    if (speed >= 1.0) {
+                        speedStr = `${speed.toFixed(2)}s/it`;
+                    } else {
+                        speedStr = `${(1 / speed).toFixed(2)}it/s`;
+                    }
+                }
+                
+                const statsText = `${worker.current}/${worker.total} [${elapsedStr}<${remainingStr}, ${speedStr}]`;
+                
+                return `
+                    <div class="worker-progress-card ${worker.active ? '' : 'inactive'}">
+                        <div class="worker-info-area">
+                            <span class="worker-label">
+                                <i class="fa-solid fa-gears ${worker.active ? 'fa-spin' : ''}"></i> Worker ${id}
+                            </span>
+                            <span class="worker-percent">${percent}%</span>
+                        </div>
+                        <div class="worker-bar-wrapper">
+                            <div class="worker-bar-fill" style="width: ${percent}%;"></div>
+                        </div>
+                        <div class="worker-stats">${statsText}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderLogs(logs) {
