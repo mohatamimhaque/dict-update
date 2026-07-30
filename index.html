@@ -116,6 +116,10 @@
                             <span class="timer-label"><i class="fa-solid fa-hourglass-half"></i> Est. Remaining</span>
                             <span class="timer-value" id="timer-remaining">Estimating...</span>
                         </div>
+                        <div class="timer-stat">
+                            <span class="timer-label"><i class="fa-solid fa-gauge-high"></i> Processing Speed</span>
+                            <span class="timer-value" id="timer-rpm">0 RPM</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -225,6 +229,15 @@
         let currentTab = 'words';
         let currentFilter = 'all';
         let statsData = null;
+
+        // Session tracking variables
+        let sessionStart = null;
+        let sessionEnd = null;
+        let lastFetchLocalTime = null;
+        let isRunActive = false;
+        let activeTimerInterval = null;
+
+        const browserOffsetMs = new Date().getTimezoneOffset() * 60000;
 
         const SUPABASE_URL = "https://fjmimidvlcrnklrsshyd.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqbWltaWR2bGNybmtscnNzaHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTU4MTYsImV4cCI6MjEwMDgzMTgxNn0.WKEaYVjMp7FUJ_gtmuf-lwlaWQgjUYwSv7IlIx6Ayxg";
@@ -524,6 +537,9 @@
             document.querySelector('.connection-status').classList.remove('error');
             document.querySelector('.status-label').textContent = 'Live Sync Active';
 
+            // Filter recent logs to keep success logs for calculations
+            const successLogs = (data.recent_logs || []).filter(log => log.status === 'success' && log.word && !log.word.startsWith('WORKER_STATUS_'));
+
             // Compute average speed from recent logs
             let totalDuration = 0;
             let durationCount = 0;
@@ -559,24 +575,111 @@
                 avgSpeedEl.textContent = avgSpeed > 0 ? `${avgSpeed.toFixed(1)}s` : 'N/A';
             }
 
-            const timerRemainingEl = document.getElementById('timer-remaining');
-            if (timerRemainingEl) {
-                if (data.remaining <= 0) {
-                    timerRemainingEl.textContent = 'Completed';
-                } else if (avgSpeed > 0) {
-                    // Since numWorkers concurrent workers are running, effective speed is avgSpeed / numWorkers seconds per word
-                    const remainingSec = Math.floor((data.remaining * avgSpeed) / numWorkers);
-                    const remHours = Math.floor(remainingSec / 3600);
-                    const remMinutes = Math.floor((remainingSec % 3600) / 60);
-                    const remSeconds = remainingSec % 60;
-
-                    let remStr = '';
-                    if (remHours > 0) remStr += `${remHours}h `;
-                    if (remMinutes > 0 || remHours > 0) remStr += `${remMinutes}m `;
-                    remStr += `${remSeconds}s`;
-                    timerRemainingEl.textContent = remStr;
+            // --- Real-time Session Elapsed Timer & RPM ---
+            if (currentTab === 'words') {
+                if (successLogs.length >= 2) {
+                    // Sort logs by timestamp (oldest first)
+                    const sortedLogs = [...successLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                    
+                    const oldestLogTime = new Date(sortedLogs[0].timestamp).getTime();
+                    const latestLogTime = new Date(sortedLogs[sortedLogs.length - 1].timestamp).getTime();
+                    
+                    // Python logged local time without timezone offset, which Supabase parsed as UTC.
+                    // Correct this timezone shift by shifting the parsed UTC time by browserOffsetMs.
+                    const oldestLogLocalTime = oldestLogTime + browserOffsetMs;
+                    const latestLogLocalTime = latestLogTime + browserOffsetMs;
+                    
+                    sessionStart = oldestLogLocalTime;
+                    sessionEnd = latestLogLocalTime;
+                    lastFetchLocalTime = Date.now();
+                    
+                    // Check if the latest log was written within the last 2 minutes (120000ms)
+                    const timeSinceLastLogMs = Date.now() - latestLogLocalTime;
+                    isRunActive = timeSinceLastLogMs >= 0 && timeSinceLastLogMs < 120000;
                 } else {
-                    timerRemainingEl.textContent = 'Estimating...';
+                    isRunActive = false;
+                }
+
+                // 2. Start tick interval if session is active
+                if (sessionStart && !activeTimerInterval) {
+                    activeTimerInterval = setInterval(() => {
+                        if (sessionStart) {
+                            let elapsedMs = sessionEnd - sessionStart;
+                            if (isRunActive && lastFetchLocalTime) {
+                                // If the run is active, tick smoothly in real time
+                                elapsedMs += (Date.now() - lastFetchLocalTime);
+                            }
+                            
+                            const secs = Math.floor(elapsedMs / 1000);
+                            const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+                            const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+                            const s = (secs % 60).toString().padStart(2, '0');
+                            const elapsedEl = document.getElementById('timer-elapsed');
+                            if (elapsedEl) elapsedEl.textContent = `${h}:${m}:${s}`;
+                        }
+                    }, 1000);
+                }
+
+                // 3. Compute RPM (Words per minute)
+                let rpm = 0;
+                if (successLogs.length > 0) {
+                    const latestLogTime = new Date(successLogs[0].timestamp).getTime() + browserOffsetMs;
+                    // If no updates in the last 2 minutes, set RPM to 0
+                    if ((Date.now() - latestLogTime) > 120000) {
+                        rpm = 0;
+                    } else if (avgSpeed > 0) {
+                        // Formula: (numWorkers / avgSpeed) * 60
+                        rpm = Math.round((numWorkers / avgSpeed) * 60);
+                    } else if (successLogs.length >= 2) {
+                        // Fallback: timestamp difference
+                        const timestamps = successLogs
+                            .map(log => new Date(log.timestamp).getTime() + browserOffsetMs)
+                            .filter(t => !isNaN(t))
+                            .sort((a, b) => a - b);
+                        
+                        if (timestamps.length >= 2) {
+                            const timeDiffMs = timestamps[timestamps.length - 1] - timestamps[0];
+                            const timeDiffMins = timeDiffMs / 60000;
+                            if (timeDiffMins > 0.05) {
+                                rpm = Math.round(timestamps.length / timeDiffMins);
+                            }
+                        }
+                    }
+                }
+
+                // Update RPM UI
+                const timerRpmEl = document.getElementById('timer-rpm');
+                if (timerRpmEl) {
+                    timerRpmEl.textContent = rpm > 0 ? `${rpm} RPM` : '0 RPM';
+                }
+
+                // 4. Est. Remaining Timer Calculation
+                const timerRemainingEl = document.getElementById('timer-remaining');
+                if (timerRemainingEl) {
+                    if (data.remaining <= 0) {
+                        timerRemainingEl.textContent = 'Completed';
+                    } else {
+                        let remainingSec = 0;
+                        if (rpm > 0) {
+                            remainingSec = Math.floor((data.remaining / rpm) * 60);
+                        } else if (avgSpeed > 0) {
+                            remainingSec = Math.floor((data.remaining * avgSpeed) / numWorkers);
+                        }
+
+                        if (remainingSec > 0) {
+                            const remHours = Math.floor(remainingSec / 3600);
+                            const remMinutes = Math.floor((remainingSec % 3600) / 60);
+                            const remSeconds = remainingSec % 60;
+
+                            let remStr = '';
+                            if (remHours > 0) remStr += `${remHours}h `;
+                            if (remMinutes > 0 || remHours > 0) remStr += `${remMinutes}m `;
+                            remStr += `${remSeconds}s`;
+                            timerRemainingEl.textContent = remStr;
+                        } else {
+                            timerRemainingEl.textContent = 'Estimating...';
+                        }
+                    }
                 }
             }
 
@@ -614,9 +717,9 @@
                 if (!latestWorkers[workerId]) {
                     try {
                         const wData = JSON.parse(log.message);
-                        const logTime = new Date(log.timestamp).getTime();
+                        const logTime = new Date(log.timestamp).getTime() + browserOffsetMs;
                         const now = Date.now();
-                        const isRecent = (now - logTime) < 5 * 60 * 1000; // 5 mins threshold
+                        const isRecent = Math.abs(now - logTime) < 5 * 60 * 1000; // 5 mins threshold
                         latestWorkers[workerId] = {
                             ...wData,
                             timestamp: log.timestamp,
@@ -739,7 +842,7 @@
                 let timeStr = 'N/A';
                 if (log.timestamp) {
                     try {
-                        const date = new Date(log.timestamp);
+                        const date = new Date(new Date(log.timestamp).getTime() + browserOffsetMs);
                         timeStr = date.toLocaleString('en-US', { 
                             timeZone: 'Asia/Dhaka',
                             month: 'short',
