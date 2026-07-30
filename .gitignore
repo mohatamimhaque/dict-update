@@ -9,9 +9,6 @@
 !style.css
 !.gitignore
 !README.md
-!rules.json
-!rule list/rules.json
-!word list/dictionary_updater.ipynb
 
 # Exclude local environments, system caches, and secrets
 .venv/
